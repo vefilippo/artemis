@@ -156,7 +156,11 @@ if /I "%ARCH%" NEQ "arm64" (
 )
 
 rem Find VC redistributable DLLs
-for /f "usebackq delims=" %%i in (`%VSWHERE% -latest -find VC\Redist\MSVC\*\%ARCH%\Microsoft.VC*.CRT`) do set VC_REDIST_DLL_PATH=%%i
+for /f "usebackq delims=" %%i in (`%VSWHERE% -latest -products * -find VC\Redist\MSVC\*\%ARCH%\Microsoft.VC*.CRT`) do set "VC_REDIST_DLL_PATH=%%i"
+if not defined VC_REDIST_DLL_PATH (
+    echo ERROR: VC++ redistributable DLLs not found; the portable package would not start on machines without them
+    goto Error
+)
 
 echo Cleaning output directories
 rmdir /s /q %DEPLOY_FOLDER%

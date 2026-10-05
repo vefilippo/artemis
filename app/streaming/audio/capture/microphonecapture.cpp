@@ -12,6 +12,7 @@ MicrophoneCapture::MicrophoneCapture(QObject* parent)
     , m_Streaming(false)
     , m_StopEncoderThread(false)
     , m_Initialized(false)
+    , m_SdlAudioInitialized(false)
     , m_Enabled(false)
     , m_FirstPacketLogged(false)
 {
@@ -36,6 +37,12 @@ MicrophoneCapture::~MicrophoneCapture()
         opus_encoder_destroy(m_Encoder);
         m_Encoder = nullptr;
     }
+
+    // Balance our SDL_InitSubSystem() so the audio subsystem is torn down with the stream
+    if (m_SdlAudioInitialized) {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        m_SdlAudioInitialized = false;
+    }
 }
 
 bool MicrophoneCapture::initialize(const std::string& deviceName)
@@ -50,6 +57,7 @@ bool MicrophoneCapture::initialize(const std::string& deviceName)
                     SDL_GetError());
         return false;
     }
+    m_SdlAudioInitialized = true;
 
     int opusError = OPUS_OK;
     m_Encoder = opus_encoder_create(kSampleRate, kChannels, OPUS_APPLICATION_VOIP, &opusError);

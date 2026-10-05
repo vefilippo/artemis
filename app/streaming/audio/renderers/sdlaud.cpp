@@ -6,7 +6,7 @@ SdlAudioRenderer::SdlAudioRenderer()
     : m_AudioDevice(0),
       m_AudioBuffer(nullptr)
 {
-    SDL_assert(!SDL_WasInit(SDL_INIT_AUDIO));
+    // Microphone capture may hold its own reference to the audio subsystem, so it can already be initialized here
 
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
@@ -91,7 +91,6 @@ SdlAudioRenderer::~SdlAudioRenderer()
     }
 
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
-    SDL_assert(!SDL_WasInit(SDL_INIT_AUDIO));
 }
 
 void* SdlAudioRenderer::getAudioBuffer(int*)
