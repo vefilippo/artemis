@@ -1,5 +1,12 @@
 # Artemis Qt
 
+> **About this fork** — personal Windows build of [wjbeckett/artemis](https://github.com/wjbeckett/artemis) with **microphone streaming** to an [Apollo host with mic passthrough](https://github.com/vefilippo/Apollo).
+>
+> - Microphone capture (Opus 48 kHz mono, 20 ms) ported from [logabell/moonlight-qt-mic](https://github.com/logabell/moonlight-qt-mic); toggle and device picker in *Settings → Audio*.
+> - Streaming library: [vefilippo/moonlight-common-c](https://github.com/vefilippo/moonlight-common-c) with the mic stream and **AES-GCM** mic encryption.
+> - Windows build script works with standalone VS 2022 Build Tools and ships the VC++ runtime in the portable zip.
+> - Version 0.6.7.1. Portable Windows x64 build: see [Releases](https://github.com/vefilippo/artemis/releases).
+
 [Artemis Qt](https://github.com/wjbeckett/artemis) is an enhanced cross-platform client for NVIDIA GameStream and [Apollo](https://github.com/ClassicOldSong/Apollo)/[Sunshine](https://github.com/LizardByte/Sunshine) servers. It brings the advanced features from [Artemis Android](https://github.com/ClassicOldSong/moonlight-android) to desktop platforms.
 
 ## 🙏 Attribution
