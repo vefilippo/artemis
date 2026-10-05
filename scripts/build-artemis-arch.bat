@@ -119,7 +119,7 @@ if /I "%VC_ARCH%" NEQ "%PROCESSOR_ARCHITECTURE%" (
 
 rem Find Visual Studio and set up environment variables directly
 set VSWHERE="%SOURCE_ROOT%\scripts\vswhere.exe"
-for /f "usebackq delims=" %%i in (`%VSWHERE% -latest -property installationPath`) do (
+for /f "usebackq delims=" %%i in (`%VSWHERE% -latest -products * -property installationPath`) do (
     set "VS_INSTALL_PATH=%%i"
     for /f "delims=" %%j in ('dir /b "%%i\VC\Tools\MSVC"') do set "MSVC_VERSION=%%j"
 )
@@ -136,7 +136,7 @@ if /I "%ARCH%" NEQ "arm64" (
             goto Error
         )
     ) else (
-        echo ERROR: vcvarsall.bat not found at %VCVARSALL%
+        echo ERROR: vcvarsall.bat not found at "%VCVARSALL%"
         goto Error
     )
 ) else (
@@ -144,7 +144,7 @@ if /I "%ARCH%" NEQ "arm64" (
 )
 
 echo MSVC Environment Setup:
-echo   VS Install Path: %VS_INSTALL_PATH%
+echo   VS Install Path: "%VS_INSTALL_PATH%"
 echo   MSVC Version: %MSVC_VERSION%
 echo   Target Arch: %VC_ARCH%
 if /I "%ARCH%" NEQ "arm64" (
@@ -231,7 +231,7 @@ echo DEBUG: Forcing entry into compilation section after qmake
     
     rem Look for cl.exe in the expected ARM64 cross-compile location
     rem and nmake.exe in the host x64 tools location (nmake is always x64)
-    for /f "usebackq delims=" %%i in (`%VSWHERE% -latest -property installationPath`) do (
+    for /f "usebackq delims=" %%i in (`%VSWHERE% -latest -products * -property installationPath`) do (
         for /f "delims=" %%j in ('dir /b "%%i\VC\Tools\MSVC"') do (
             set "CL_PATH=%%i\VC\Tools\MSVC\%%j\bin\Hostx64\arm64\cl.exe"
             set "NMAKE_PATH=%%i\VC\Tools\MSVC\%%j\bin\Hostx64\x64\nmake.exe"
@@ -248,14 +248,14 @@ echo DEBUG: Forcing entry into compilation section after qmake
     if "!FOUND_CL!"=="" (
         echo ERROR: Could not find cl.exe for ARM64 cross-compilation
         echo VSWHERE path: %VSWHERE%
-        echo VS Install path: %VS_INSTALL_PATH%
+        echo VS Install path: "%VS_INSTALL_PATH%"
         echo MSVC Version: %MSVC_VERSION%
         goto Error
     )
     if "!FOUND_NMAKE!"=="" (
         echo ERROR: Could not find nmake.exe for ARM64 cross-compilation
         echo VSWHERE path: %VSWHERE%
-        echo VS Install path: %VS_INSTALL_PATH%
+        echo VS Install path: "%VS_INSTALL_PATH%"
         echo MSVC Version: %MSVC_VERSION%
         goto Error
     )
