@@ -162,6 +162,12 @@ public:
     Q_PROPERTY(double customRefreshRate MEMBER customRefreshRate NOTIFY customRefreshRateChanged)
     Q_PROPERTY(bool enableResolutionScaling MEMBER enableResolutionScaling NOTIFY enableResolutionScalingChanged)
     Q_PROPERTY(int resolutionScaleFactor MEMBER resolutionScaleFactor NOTIFY resolutionScaleFactorChanged);
+    Q_PROPERTY(bool enableMicrophone MEMBER enableMicrophone NOTIFY enableMicrophoneChanged)
+    Q_PROPERTY(QString microphoneDevice MEMBER microphoneDevice NOTIFY microphoneDeviceChanged)
+    Q_PROPERTY(QStringList microphoneDevices READ microphoneDevices NOTIFY microphoneDevicesChanged)
+
+    Q_INVOKABLE void refreshMicrophoneDevices();
+    QStringList microphoneDevices() const;
 
     Q_INVOKABLE bool retranslate();
 
@@ -212,6 +218,8 @@ public:
     double customRefreshRate;
     bool enableResolutionScaling;
     int resolutionScaleFactor;
+    bool enableMicrophone;
+    QString microphoneDevice;
 
 signals:
     void displayModeChanged();
@@ -257,6 +265,9 @@ signals:
     void customRefreshRateChanged();
     void enableResolutionScalingChanged();
     void resolutionScaleFactorChanged();
+    void enableMicrophoneChanged();
+    void microphoneDeviceChanged();
+    void microphoneDevicesChanged();
 
 private:
     explicit StreamingPreferences(QQmlEngine *qmlEngine);
@@ -264,5 +275,6 @@ private:
     QString getSuffixFromLanguage(Language lang);
 
     QQmlEngine* m_QmlEngine;
+    QStringList m_MicrophoneDevices;
 };
 

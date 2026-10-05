@@ -18,6 +18,7 @@
 class QuickMenuManager;
 class ServerCommandManager;
 class ClipboardManager;
+class MicrophoneCapture;
 
 class SupportedVideoFormatList : public QList<int>
 {
@@ -199,6 +200,10 @@ private:
 
     void notifyMouseEmulationMode(bool enabled);
 
+    bool initializeMicrophoneCapture();
+
+    void destroyMicrophoneCapture();
+
     void updateOptimalWindowDisplayMode();
 
     enum class DecoderAvailability {
@@ -314,6 +319,8 @@ private:
     QuickMenuManager* m_QuickMenuManager;
     ServerCommandManager* m_ServerCommandManager;
     ClipboardManager* m_ClipboardManager;
+    MicrophoneCapture* m_MicrophoneCapture;
+    bool m_MicrophoneEnabled;
 
     static CONNECTION_LISTENER_CALLBACKS k_ConnCallbacks;
     static Session* s_ActiveSession;

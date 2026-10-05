@@ -1,4 +1,5 @@
 #include "session.h"
+#include "streaming/audio/capture/microphonecapture.h"
 #include "settings/streamingpreferences.h"
 #include "streaming/streamutils.h"
 #include "backend/richpresencemanager.h"
@@ -620,7 +621,9 @@ Session::Session(NvComputer* computer, NvApp& app, StreamingPreferences *prefere
     m_DropAudioEndTime(0),
     m_QuickMenuManager(new QuickMenuManager()),
     m_ServerCommandManager(new ServerCommandManager()),
-    m_ClipboardManager(ClipboardManager::instance())
+    m_ClipboardManager(ClipboardManager::instance()),
+    m_MicrophoneCapture(nullptr),
+    m_MicrophoneEnabled(false)
 {
 }
 
@@ -747,6 +750,8 @@ bool Session::initialize()
         m_StreamConfig.encryptionFlags = ENCFLG_AUDIO;
     }
 #endif
+
+    m_StreamConfig.enableMic = m_Preferences->enableMicrophone;
 
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
                 "Video bitrate: %d kbps",
@@ -1874,6 +1879,37 @@ public:
     Session* m_Session;
 };
 
+bool Session::initializeMicrophoneCapture()
+{
+    if (m_MicrophoneCapture != nullptr) {
+        return true;
+    }
+
+    m_MicrophoneCapture = new MicrophoneCapture(this);
+    m_MicrophoneCapture->setEnabled(m_Preferences->enableMicrophone);
+    const std::string microphoneDeviceName = m_Preferences->microphoneDevice.toStdString();
+    if (!m_MicrophoneCapture->initialize(microphoneDeviceName)) {
+        delete m_MicrophoneCapture;
+        m_MicrophoneCapture = nullptr;
+        m_MicrophoneEnabled = false;
+        return false;
+    }
+
+    m_MicrophoneEnabled = true;
+    return true;
+}
+
+void Session::destroyMicrophoneCapture()
+{
+    if (m_MicrophoneCapture != nullptr) {
+        m_MicrophoneCapture->stop();
+        delete m_MicrophoneCapture;
+        m_MicrophoneCapture = nullptr;
+    }
+
+    m_MicrophoneEnabled = false;
+}
+
 void Session::exec(QWindow* qtWindow)
 {
     m_QtWindow = qtWindow;
@@ -1955,11 +1991,26 @@ void Session::execInternal()
 
     // If the connection failed, clean up and abort the connection.
     if (!m_AsyncConnectionSuccess) {
+        destroyMicrophoneCapture();
         delete m_InputHandler;
         m_InputHandler = nullptr;
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
         QThreadPool::globalInstance()->start(new DeferredSessionCleanupTask(this));
         return;
+    }
+
+    if (m_Preferences->enableMicrophone) {
+        if (LiIsMicrophoneStreamActive()) {
+            if (!initializeMicrophoneCapture() || !m_MicrophoneCapture->start()) {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                            "Microphone capture initialization failed after successful negotiation");
+                destroyMicrophoneCapture();
+            }
+        }
+        else {
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                        "Host did not negotiate microphone streaming; leaving client microphone disabled");
+        }
     }
 
     int x, y, width, height;
@@ -2032,6 +2083,7 @@ void Session::execInternal()
                          "SDL_CreateWindow() failed: %s",
                          SDL_GetError());
 
+            destroyMicrophoneCapture();
             delete m_InputHandler;
             m_InputHandler = nullptr;
             SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -2512,6 +2564,8 @@ void Session::execInternal()
     }
 
 DispatchDeferredCleanup:
+    destroyMicrophoneCapture();
+
     // Uncapture the mouse and hide the window immediately,
     // so we can return to the Qt GUI ASAP.
     m_InputHandler->setCaptureActive(false);

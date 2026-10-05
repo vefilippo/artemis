@@ -10,6 +10,8 @@
 
 #include <QtDebug>
 
+#include <SDL.h>
+
 #define SER_STREAMSETTINGS "streamsettings"
 #define SER_WIDTH "width"
 #define SER_HEIGHT "height"
@@ -59,6 +61,8 @@
 #define SER_CUSTOMREFRESHRATE "customrefreshrate"
 #define SER_RESOLUTIONSCALING "resolutionscaling"
 #define SER_RESOLUTIONSCALEFACTOR "resolutionscalefactor"
+#define SER_ENABLEMICROPHONE "enablemicrophone"
+#define SER_MICROPHONEDEVICE "microphonedevice"
 
 #define CURRENT_DEFAULT_VER 2
 
@@ -182,6 +186,9 @@ void StreamingPreferences::reload()
     customRefreshRate = settings.value(SER_CUSTOMREFRESHRATE, 59.94).toDouble();
     enableResolutionScaling = settings.value(SER_RESOLUTIONSCALING, false).toBool();
     resolutionScaleFactor = settings.value(SER_RESOLUTIONSCALEFACTOR, 100).toInt();
+    enableMicrophone = settings.value(SER_ENABLEMICROPHONE, false).toBool();
+    microphoneDevice = settings.value(SER_MICROPHONEDEVICE, "").toString();
+    refreshMicrophoneDevices();
 
 
     // Perform default settings updates as required based on last default version
@@ -380,6 +387,8 @@ void StreamingPreferences::save()
     settings.setValue(SER_CUSTOMREFRESHRATE, customRefreshRate);
     settings.setValue(SER_RESOLUTIONSCALING, enableResolutionScaling);
     settings.setValue(SER_RESOLUTIONSCALEFACTOR, resolutionScaleFactor);
+    settings.setValue(SER_ENABLEMICROPHONE, enableMicrophone);
+    settings.setValue(SER_MICROPHONEDEVICE, microphoneDevice);
 }
 
 int StreamingPreferences::getDefaultBitrate(int width, int height, int fps, bool yuv444)
@@ -436,4 +445,45 @@ int StreamingPreferences::getDefaultBitrate(int width, int height, int fps, bool
     }
 
     return qRound(resolutionFactor * frameRateFactor) * 1000;
+}
+
+QStringList StreamingPreferences::microphoneDevices() const
+{
+    return m_MicrophoneDevices;
+}
+
+void StreamingPreferences::refreshMicrophoneDevices()
+{
+    const bool audioWasInitialized = SDL_WasInit(SDL_INIT_AUDIO) != 0;
+    if (!audioWasInitialized && SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
+        qWarning() << "Failed to initialize SDL audio for microphone enumeration:" << SDL_GetError();
+        return;
+    }
+
+    QStringList devices;
+    const int deviceCount = SDL_GetNumAudioDevices(SDL_TRUE);
+    for (int i = 0; i < deviceCount; ++i) {
+        const char* name = SDL_GetAudioDeviceName(i, SDL_TRUE);
+        if (name == nullptr || *name == '\0') {
+            continue;
+        }
+
+        const QString deviceName = QString::fromUtf8(name);
+        if (!devices.contains(deviceName)) {
+            devices.append(deviceName);
+        }
+    }
+
+    if (!microphoneDevice.isEmpty() && !devices.contains(microphoneDevice)) {
+        devices.prepend(microphoneDevice);
+    }
+
+    if (!audioWasInitialized) {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    }
+
+    if (devices != m_MicrophoneDevices) {
+        m_MicrophoneDevices = devices;
+        emit microphoneDevicesChanged();
+    }
 }
